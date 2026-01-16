@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Untitled Archives</title>
+  <style>
+    body {
+      background: #000;
+      color: #0aff0a;
+      font-family: "Courier New", monospace;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    header, footer {
+      width: 100%;
+      padding: 20px 0;
+      border: 1px solid #0aff0a;
+    }
+
+    nav a {
+      color: #0aff0a;
+      text-decoration: none;
+      margin: 0 15px;
+    }
+
+    h1 {
+      margin-top: 40px;
+      font-size: 2.5rem;
+    }
+
+    #game-container {
+      margin: 40px 0;
+    }
+
+    canvas {
+      border: 1px solid #0aff0a;
+      cursor: pointer;
+      outline: none;
+    }
+
+    canvas.active {
+      box-shadow: 0 0 15px #0aff0a;
+    }
+
+    #qr-popup {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #000;
+      padding: 20px;
+      border: 1px solid #0aff0a;
+      box-shadow: 0 0 15px #0aff0a;
+    }
+
+    #qr-popup img {
+      width: 180px;
+      height: 180px;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <nav>
+      <a href="#links">Other Links</a>
+      <a href="#about">About UntitledArchives</a>
+    </nav>
+  </header>
+
+  <h1>UNTITLED ARCHIVES</h1>
+  <p>PDF Book — <a href="book.pdf" style="color:#0aff0a;">Download / Purchase</a></p>
+
+  <div id="game-container">
+    <canvas id="mazeCanvas" width="490" height="490" tabindex="0"></canvas>
+  </div>
+
+  <div id="qr-popup">
+    <h2>You have to pay to play!</h2>
+    <img src="qr-placeholder.png" alt="QR Code" />
+    <p>See PDF for full menu.</p>
+  </div>
+
+  <footer>
+    <p>"Jeder Eingang ist ein Hinweis. Jeder Hinweis eine Prüfung."</p>
+  </footer>
+
+  <script>
+    const canvas = document.getElementById("mazeCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const GRID_SIZE = 49;
+    const CELL_SIZE = 10;
+    const SIZE = GRID_SIZE * CELL_SIZE;
+
+    canvas.width = SIZE;
+    canvas.height = SIZE;
+
+    let mazeActive = false;
+
+    canvas.addEventListener("click", () => {
+      mazeActive = true;
+      canvas.classList.add("active");
+      canvas.focus();
+    });
+
+    document.addEventListener("click", (e) => {
+      if (e.target !== canvas) {
+        mazeActive = false;
+        canvas.classList.remove("active");
+      }
+    });
+
+    const MAZE = [
+      "0000000000000000000000000000000000000000000000000",
+      "0             0       0   0       0             0",
+      "0 00000000000 0 00000 0 0 0 00000 0 00000000000 0",
+      "0 0           0 0   0 0 0 0 0   0 0           0 0",
+      "0 0 00000000000 0 0 0 0 0 0 0 0 0 00000000000 0 0",
+      "0 0             0 0 0   0   0 0 0           0 0 0",
+      "0 000000000000000 0 000000000 0 00000000000 0 0 0",
+      "0 0               0 0       0 0             0 0 0",
+      "0 0 000000000000000 0 00000 0 000000000000000 0 0",
+      "0 0     0           0 0   0 0           0     0 0",
+      "0 00000 0 00000000000 0 0 0 00000000000 0 00000 0",
+      "0     0 0 0           0 0 0           0 0 0     0",
+      "00000 0 0 0 00000000000 0 00000000000 0 0 0 00000",
+      "0     0 0 0 0      0    0    0      0 0 0 0     0",
+      "0 00000 0 0 0 0000 0 0000000 0 0000 0 0 0 00000 0",
+      "0 0     0 0 0 0    0    0    0    0 0 0 0     0 0",
+      "0 0 00000 0 0 0 0000000 0 0000000 0 0 0 00000 0 0",
+      "0 0 0     0 0 0 0       0       0 0 0 0     0 0 0",
+      "0 0 0 00000 0 0 0 0000000000000 0 0 0 00000 0 0 0",
+      "0 0 0       0 0 0 0     0     0 0 0 0 0     0 0 0",
+      "0 0 000000000 0 0 0 000 0 000 0 0 0 0 0 00000 0 0",
+      "0 0     0     0   0 0   0   0   0 0   0 0     0 0",
+      "0 00000 0 000000000 0 00000 00000 00000 0 00000 0",
+      "0     0 0     0     0 02220 0     0     0 0     0",
+      "00000 0 00000 0 00000 02220 0 00000 00000 0 00000",
+      "0     0 0     0     0 02 20 0     0     0 0     0",
+      "0 00000 0 000000000 0 00 00 00000 00000 0 00000 0",
+      "0 0     0     0   0 0  0 0  0   0 0   0 0     0 0",
+      "0 0 000000000 0 0 0 00 0 0 00 0 0 0 0 0 00000 0 0",
+      "0 0 0       0 0 0 0  0 0 0    0 0 0 0 0     0 0 0",
+      "0 0 0 00000 0 0 0 00 0 0 000000 0 0 0 00000 0 0 0",
+      "0 0 0     0 0 0 0    0 0    0   0 0 0 0     0 0 0",
+      "0 0 00000 0 0 0 000000 0000 0 000 0 0 0 00000 0 0",
+      "0 0     0 0 0 0      0 0    0     0 0 0 0     0 0",
+      "0 00000 0 0 0 000000 0 0 0000000000 0 0 0 00000 0",
+      "0     0 0 0 0        0 0            0 0 0 0     0",
+      "00000 0 0 0 0000000000 00000000000000 0 0 0 00000",
+      "0     0 0 0            0 0      0     0 0 0     0",
+      "0 00000 0 0000000000000000 0000 0 00000 0 00000 0",
+      "0 0     0        0       0 0    0     0 0     0 0",
+      "0 0 000000000000 0 00000 0 0 00000000 0 00000 0 0",
+      "0 0        0     0     0 0 0    0     0     0 0 0",
+      "0 00000000 0 000000000 0 0 0000 0 000000000 0 0 0",
+      "0 0        0     0     0 0 0    0     0     0 0 0",
+      "0 0 000000000000 0 00000 0 0 00000000 0 00000 0 0",
+      "0 0        0     0     0 0 0          0       0 0",
+      "0 00000000 0 000000000 0 0 00000000000000000000 0",
+      "0          0           0 0                      0",
+      "000000000000000000000000 000000000000000000000000"
+    ];
+
+    const player = { row: 48, col: 24 };
+    const goal = { row: 24, col: 24 };
+
+    function canMove(r, c) {
+      return MAZE[r] && MAZE[r][c] !== "0";
+    }
+
+    function drawMaze() {
+      ctx.clearRect(0, 0, SIZE, SIZE);
+
+      for (let r = 0; r < GRID_SIZE; r++) {
+        for (let c = 0; c < GRID_SIZE; c++) {
+          if (MAZE[r][c] === "0") {
+            ctx.fillStyle = "#0aff0a";
+            ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+          }
+        }
+      }
+
+      ctx.fillStyle = "#0aff0a";
+      ctx.beginPath();
+      ctx.arc(
+        player.col * CELL_SIZE + CELL_SIZE / 2,
+        player.row * CELL_SIZE + CELL_SIZE / 2,
+        CELL_SIZE / 3,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (!mazeActive) return;
+
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+        e.preventDefault();
+      }
+
+      let r = player.row;
+      let c = player.col;
+
+      if (e.key === "ArrowUp") r--;
+      if (e.key === "ArrowDown") r++;
+      if (e.key === "ArrowLeft") c--;
+      if (e.key === "ArrowRight") c++;
+
+      if (canMove(r, c)) {
+        player.row = r;
+        player.col = c;
+      }
+
+      if (player.row === goal.row && player.col === goal.col) {
+        document.getElementById("qr-popup").style.display = "block";
+      }
+
+      drawMaze();
+    });
+
+    drawMaze();
+  </script>
+</body>
+</html>

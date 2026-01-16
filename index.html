@@ -3,240 +3,141 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Untitled Archives</title>
-
-<p>
-FILE AVAILABLE - 
-<a href="book.html" style="color:#0aff0a;"
-	ACCESS DOCUMENT
-	</a>
-        </p>
-
+  <title>Entry</title>
   <style>
     body {
       background: #000;
       color: #0aff0a;
       font-family: "Courier New", monospace;
       margin: 0;
-      padding: 0;
+      height: 100vh;
       display: flex;
-      flex-direction: column;
       align-items: center;
+      justify-content: center;
+    }
+
+    .gate {
       text-align: center;
     }
 
-    header, footer {
-      width: 100%;
-      padding: 20px 0;
-      border: 1px solid #0aff0a;
+    label {
+      display: block;
+      margin-bottom: 14px;
+      font-size: 0.8rem;
+      letter-spacing: 3px;
     }
 
-    nav a {
+    .input-wrapper {
+      position: relative;
+      width: 340px;
+      margin: 0 auto;
+    }
+
+    input {
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid #0aff0a;
       color: #0aff0a;
-      text-decoration: none;
-      margin: 0 15px;
-    }
-
-    h1 {
-      margin-top: 40px;
-      font-size: 2.5rem;
-    }
-
-    #game-container {
-      margin: 40px 0;
-    }
-
-    canvas {
-      border: 1px solid #0aff0a;
-      cursor: pointer;
+      font-family: inherit;
+      font-size: 1rem;
+      width: 100%;
+      padding: 6px 0;
       outline: none;
+      text-align: center;
+      caret-color: transparent;
     }
 
-    canvas.active {
-      box-shadow: 0 0 15px #0aff0a;
-    }
-
-    #qr-popup {
-      display: none;
-      position: fixed;
-      top: 50%;
+    .cursor {
+      position: absolute;
+      bottom: 8px;
       left: 50%;
-      transform: translate(-50%, -50%);
-      background: #000;
-      padding: 20px;
-      border: 1px solid #0aff0a;
-      box-shadow: 0 0 15px #0aff0a;
+      width: 10px;
+      height: 16px;
+      background: #0aff0a;
+      animation: blink 1s step-end infinite;
+      transform: translateX(-50%);
+      pointer-events: none;
     }
 
-    #qr-popup img {
-      width: 180px;
-      height: 180px;
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+
+    .error {
+      margin-top: 18px;
+      font-size: 0.7rem;
+      letter-spacing: 3px;
+      display: none;
     }
   </style>
 </head>
-
 <body>
-  <header>
-    <nav>
-      <a href="#links">Other Links</a>
-      <a href="#about">About UntitledArchives</a>
-    </nav>
-  </header>
 
-  <h1>UNTITLED ARCHIVES</h1>
-  <p>PDF Book — <a href="book.pdf" style="color:#0aff0a;">Download / Purchase</a></p>
-
-  <div id="game-container">
-    <canvas id="mazeCanvas" width="490" height="490" tabindex="0"></canvas>
+  <div class="gate">
+    <label>STATE YOUR PURPOSE</label>
+    <div class="input-wrapper">
+      <input type="password" id="purpose" autocomplete="off" />
+      <div class="cursor"></div>
+    </div>
+    <div class="error" id="error"></div>
   </div>
-
-  <div id="qr-popup">
-    <h2>You have to pay to play!</h2>
-    <img src="qr-placeholder.png" alt="QR Code" />
-    <p>See PDF for full menu.</p>
-  </div>
-
-  <footer>
-    <p>"Jeder Eingang ist ein Hinweis. Jeder Hinweis eine Prüfung."</p>
-  </footer>
 
   <script>
-    const canvas = document.getElementById("mazeCanvas");
-    const ctx = canvas.getContext("2d");
+    const PASSWORD = "I would like to enter the game.";
+    let attempts = 0;
+    let locked = false;
 
-    const GRID_SIZE = 49;
-    const CELL_SIZE = 10;
-    const SIZE = GRID_SIZE * CELL_SIZE;
-
-    canvas.width = SIZE;
-    canvas.height = SIZE;
-
-    let mazeActive = false;
-
-    canvas.addEventListener("click", () => {
-      mazeActive = true;
-      canvas.classList.add("active");
-      canvas.focus();
-    });
-
-    document.addEventListener("click", (e) => {
-      if (e.target !== canvas) {
-        mazeActive = false;
-        canvas.classList.remove("active");
-      }
-    });
-
-    const MAZE = [
-      "0000000000000000000000000000000000000000000000000",
-      "0             0       0   0       0             0",
-      "0 00000000000 0 00000 0 0 0 00000 0 00000000000 0",
-      "0 0           0 0   0 0 0 0 0   0 0           0 0",
-      "0 0 00000000000 0 0 0 0 0 0 0 0 0 00000000000 0 0",
-      "0 0             0 0 0   0   0 0 0           0 0 0",
-      "0 000000000000000 0 000000000 0 00000000000 0 0 0",
-      "0 0               0 0       0 0             0 0 0",
-      "0 0 000000000000000 0 00000 0 000000000000000 0 0",
-      "0 0     0           0 0   0 0           0     0 0",
-      "0 00000 0 00000000000 0 0 0 00000000000 0 00000 0",
-      "0     0 0 0           0 0 0           0 0 0     0",
-      "00000 0 0 0 00000000000 0 00000000000 0 0 0 00000",
-      "0     0 0 0 0      0    0    0      0 0 0 0     0",
-      "0 00000 0 0 0 0000 0 0000000 0 0000 0 0 0 00000 0",
-      "0 0     0 0 0 0    0    0    0    0 0 0 0     0 0",
-      "0 0 00000 0 0 0 0000000 0 0000000 0 0 0 00000 0 0",
-      "0 0 0     0 0 0 0       0       0 0 0 0     0 0 0",
-      "0 0 0 00000 0 0 0 0000000000000 0 0 0 00000 0 0 0",
-      "0 0 0       0 0 0 0     0     0 0 0 0 0     0 0 0",
-      "0 0 000000000 0 0 0 000 0 000 0 0 0 0 0 00000 0 0",
-      "0 0     0     0   0 0   0   0   0 0   0 0     0 0",
-      "0 00000 0 000000000 0 00000 00000 00000 0 00000 0",
-      "0     0 0     0     0 02220 0     0     0 0     0",
-      "00000 0 00000 0 00000 02220 0 00000 00000 0 00000",
-      "0     0 0     0     0 02 20 0     0     0 0     0",
-      "0 00000 0 000000000 0 00 00 00000 00000 0 00000 0",
-      "0 0     0     0   0 0  0 0  0   0 0   0 0     0 0",
-      "0 0 000000000 0 0 0 00 0 0 00 0 0 0 0 0 00000 0 0",
-      "0 0 0       0 0 0 0  0 0 0    0 0 0 0 0     0 0 0",
-      "0 0 0 00000 0 0 0 00 0 0 000000 0 0 0 00000 0 0 0",
-      "0 0 0     0 0 0 0    0 0    0   0 0 0 0     0 0 0",
-      "0 0 00000 0 0 0 000000 0000 0 000 0 0 0 00000 0 0",
-      "0 0     0 0 0 0      0 0    0     0 0 0 0     0 0",
-      "0 00000 0 0 0 000000 0 0 0000000000 0 0 0 00000 0",
-      "0     0 0 0 0        0 0            0 0 0 0     0",
-      "00000 0 0 0 0000000000 00000000000000 0 0 0 00000",
-      "0     0 0 0            0 0      0     0 0 0     0",
-      "0 00000 0 0000000000000000 0000 0 00000 0 00000 0",
-      "0 0     0        0       0 0    0     0 0     0 0",
-      "0 0 000000000000 0 00000 0 0 00000000 0 00000 0 0",
-      "0 0        0     0     0 0 0    0     0     0 0 0",
-      "0 00000000 0 000000000 0 0 0000 0 000000000 0 0 0",
-      "0 0        0     0     0 0 0    0     0     0 0 0",
-      "0 0 000000000000 0 00000 0 0 00000000 0 00000 0 0",
-      "0 0        0     0     0 0 0          0       0 0",
-      "0 00000000 0 000000000 0 0 00000000000000000000 0",
-      "0          0           0 0                      0",
-      "000000000000000000000000 000000000000000000000000"
-    ];
-
-    const player = { row: 48, col: 24 };
-    const goal = { row: 24, col: 24 };
-
-    function canMove(r, c) {
-      return MAZE[r] && MAZE[r][c] !== "0";
+    function randomizeText(text) {
+      return text
+        .split('')
+        .map(ch => Math.random() > 0.5 ? ch.toUpperCase() : ch.toLowerCase())
+        .join(' ');
     }
 
-    function drawMaze() {
-      ctx.clearRect(0, 0, SIZE, SIZE);
+    function deny(message) {
+      const error = document.getElementById('error');
+      error.textContent = randomizeText(message);
+      error.style.display = 'block';
 
-      for (let r = 0; r < GRID_SIZE; r++) {
-        for (let c = 0; c < GRID_SIZE; c++) {
-          if (MAZE[r][c] === "0") {
-            ctx.fillStyle = "#0aff0a";
-            ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+      const displayTime = 1200 + attempts * 800;
+
+      setTimeout(() => {
+        error.style.display = 'none';
+        locked = false;
+      }, displayTime);
+    }
+
+    function check() {
+      if (locked) return;
+
+      const input = document.getElementById('purpose');
+      const value = input.value;
+
+      locked = true;
+      input.disabled = true;
+
+      setTimeout(() => {
+        if (value === PASSWORD) {
+          window.location.href = "game.html";
+        } else {
+          attempts++;
+          input.value = '';
+          input.disabled = false;
+
+          if (attempts >= 3) {
+            deny("Knowledge precedes entry. Return when you have studied.");
+          } else {
+            deny("Access Denied");
           }
         }
-      }
-
-      ctx.fillStyle = "#0aff0a";
-      ctx.beginPath();
-      ctx.arc(
-        player.col * CELL_SIZE + CELL_SIZE / 2,
-        player.row * CELL_SIZE + CELL_SIZE / 2,
-        CELL_SIZE / 3,
-        0,
-        Math.PI * 2
-      );
-      ctx.fill();
+      }, 1200 + attempts * 500);
     }
 
-    document.addEventListener("keydown", (e) => {
-      if (!mazeActive) return;
-
-      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
-        e.preventDefault();
-      }
-
-      let r = player.row;
-      let c = player.col;
-
-      if (e.key === "ArrowUp") r--;
-      if (e.key === "ArrowDown") r++;
-      if (e.key === "ArrowLeft") c--;
-      if (e.key === "ArrowRight") c++;
-
-      if (canMove(r, c)) {
-        player.row = r;
-        player.col = c;
-      }
-
-      if (player.row === goal.row && player.col === goal.col) {
-        document.getElementById("qr-popup").style.display = "block";
-      }
-
-      drawMaze();
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') check();
     });
-
-    drawMaze();
   </script>
+
 </body>
 </html>
+
